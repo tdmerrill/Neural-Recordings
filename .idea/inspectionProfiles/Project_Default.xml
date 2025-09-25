@@ -1,0 +1,20 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="PyPackageRequirementsInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredPackages">
+        <list>
+          <option value="clr-loader" />
+          <option value="plotly" />
+          <option value="pyinstaller" />
+          <option value="pyinstaller-hooks-contrib" />
+          <option value="pythonnet" />
+          <option value="pywebview" />
+          <option value="scikit-learn" />
+          <option value="tkhtmlview" />
+          <option value="tkinterweb" />
+        </list>
+      </option>
+    </inspection_tool>
+  </profile>
+</component>
