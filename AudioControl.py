@@ -1,17 +1,27 @@
-import serial, csv, random, time
+import serial, time
+ser = serial.Serial('COM7', 115200, timeout=1)
+time.sleep(2)  # give Teensy time to reset
 
-ser = serial.Serial('COM3', 115200, timeout=1)
+# ask for list
+stimuli=[]
+ser.write(b'LIST\n')
+while True:
+    line = ser.readline().decode(errors='ignore').strip()
+    if not line:
+        continue
+    if 'FILE' in line:
+        print(line.split(' ')[1])
+        stimuli.append(line.split(' ')[1])
+    if line == 'END':
+        break
 
-sounds = ['a.wav', 'b.wav', 'c.wav']
-random.shuffle(sounds)
 
-with open('log.csv','a',newline='') as f:
-    writer = csv.writer(f)
-    for s in sounds:
-        t = time.time()  # when we sent command
-        ser.write(f"PLAY {s}\n".encode())
-        # optionally wait for Teensy to say DONE
-        line = ser.readline().decode().strip()
-        print(line)
-        writer.writerow([t, s, line])
-        f.flush()
+print("TESTING PLAYBACK")
+write_str = f'PLAY {stimuli[0]}\n'
+ser.write(write_str.encode())
+while True:
+    line = ser.readline().decode(errors='ignore').strip()
+    if line:
+        print("got:", line)
+    if line.startswith('DONE '):
+        break
