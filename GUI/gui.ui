@@ -155,7 +155,7 @@ p, li { white-space: pre-wrap; }
     <property name="geometry">
      <rect>
       <x>390</x>
-      <y>180</y>
+      <y>470</y>
       <width>181</width>
       <height>51</height>
      </rect>
@@ -173,7 +173,7 @@ p, li { white-space: pre-wrap; }
     <property name="geometry">
      <rect>
       <x>390</x>
-      <y>150</y>
+      <y>440</y>
       <width>201</width>
       <height>31</height>
      </rect>
@@ -191,13 +191,138 @@ p, li { white-space: pre-wrap; }
     <property name="geometry">
      <rect>
       <x>390</x>
-      <y>10</y>
+      <y>300</y>
       <width>401</width>
       <height>121</height>
      </rect>
     </property>
     <property name="text">
      <string>Begin Experiment</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="ReadyExperimentButton">
+    <property name="geometry">
+     <rect>
+      <x>390</x>
+      <y>110</y>
+      <width>401</width>
+      <height>121</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Ready Experiment</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="PredictedTimeLabel">
+    <property name="geometry">
+     <rect>
+      <x>390</x>
+      <y>240</y>
+      <width>181</width>
+      <height>51</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>12</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>Predicted Time:</string>
+    </property>
+   </widget>
+   <widget class="QSpinBox" name="NumRepSpinBox">
+    <property name="geometry">
+     <rect>
+      <x>530</x>
+      <y>20</y>
+      <width>42</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <property name="value">
+     <number>10</number>
+    </property>
+   </widget>
+   <widget class="QLabel" name="NumberOfRepetitionsLabel">
+    <property name="geometry">
+     <rect>
+      <x>410</x>
+      <y>20</y>
+      <width>131</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Number of Repetitions:</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="TimeBetweenStimuliLabel">
+    <property name="geometry">
+     <rect>
+      <x>410</x>
+      <y>50</y>
+      <width>131</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Time Between Stimuli:</string>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="JitterCheckbox">
+    <property name="geometry">
+     <rect>
+      <x>610</x>
+      <y>20</y>
+      <width>70</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Add Jitter?</string>
+    </property>
+    <property name="checked">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="JitterLabel">
+    <property name="geometry">
+     <rect>
+      <x>610</x>
+      <y>50</y>
+      <width>131</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Jitter Time:</string>
+    </property>
+   </widget>
+   <widget class="QDoubleSpinBox" name="JitterSpinBox">
+    <property name="geometry">
+     <rect>
+      <x>670</x>
+      <y>50</y>
+      <width>62</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <property name="value">
+     <double>2.000000000000000</double>
+    </property>
+   </widget>
+   <widget class="QDoubleSpinBox" name="TimeBetweenStimuliSpinBox">
+    <property name="geometry">
+     <rect>
+      <x>530</x>
+      <y>50</y>
+      <width>62</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <property name="value">
+     <double>10.000000000000000</double>
     </property>
    </widget>
   </widget>

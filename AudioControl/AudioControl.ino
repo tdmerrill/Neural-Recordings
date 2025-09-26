@@ -3,37 +3,72 @@
 #include <Wire.h>
 #include <SPI.h>
 #include <SD.h>
+#include <SerialFlash.h>
 
 // adjust as needed:
 const int TTL_PIN = 2;            // pin that goes HIGH during playback
 const int SD_CS   = BUILTIN_SDCARD; // chip select for Teensy 4.1 built-in SD
 
-AudioPlaySdWav playWav;
-AudioOutputI2S audioOut;
-AudioConnection patchCord1(playWav, 0, audioOut, 0);
-AudioConnection patchCord2(playWav, 1, audioOut, 1);
+AudioPlaySdWav playWav1;
+AudioOutputI2S audioOutput;
+AudioConnection patchCord1(playWav1, 0, audioOutput, 0);
+AudioConnection patchCord2(playWav1, 1, audioOutput, 1);
+AudioControlSGTL5000     sgtl5000_1;
+
+// Use these with the Teensy Audio Shield
+#define SDCARD_CS_PIN    10
+#define SDCARD_MOSI_PIN  7   // Teensy 4 ignores this, uses pin 11
+#define SDCARD_SCK_PIN   14  // Teensy 4 ignores this, uses pin 13
 
 void setup() {
   pinMode(TTL_PIN, OUTPUT);
   digitalWrite(TTL_PIN, LOW);
 
   Serial.begin(115200);
-  AudioMemory(12);
+  AudioMemory(8);
 
-  if (!SD.begin(SD_CS)) {
-    Serial.println("SD init failed");
-    while (1) delay(1000);
+  sgtl5000_1.enable();
+  sgtl5000_1.volume(0.5);
+
+  SPI.setMOSI(SDCARD_MOSI_PIN);
+  SPI.setSCK(SDCARD_SCK_PIN);
+  if (!(SD.begin(SDCARD_CS_PIN))) {
+    // stop here, but print a message repetitively
+    while (1) {
+      Serial.println("Unable to access the SD card");
+      delay(500);
+    }
   }
 
-  // Serial.println("READY");
-  // Serial.println("Type LIST or PLAY filename.wav");
+}
+
+void playSound(const char *filename)
+{
+  Serial.print("Playing file: ");
+  Serial.println(filename);
+
+  // Start playing the file.  This sketch continues to
+  // run while the file plays.
+  playWav1.play(filename);
+
+  // A brief delay for the library read WAV info
+  delay(10);
+
+  // Simply wait for the file to finish playing.
+  while (playWav1.isPlaying()) {
+    // uncomment these lines if you audio shield
+    // has the optional volume pot soldered
+    //float vol = analogRead(15);
+    //vol = vol / 1024;
+    // sgtl5000_1.volume(vol);
+  }
 }
 
 // list all WAV files in /stimuli folder
 void listFiles() {
-  File dir = SD.open("stimuli");
+  File dir = SD.open("/");   // open root instead of "stimuli"
   if (!dir) {
-    Serial.println("stimuli folder not found");
+    Serial.println("SD root not found");
     return;
   }
   while (true) {
@@ -52,21 +87,22 @@ void listFiles() {
 }
 
 void playFile(const char *fname) {
-  char fullpath[64];
-  snprintf(fullpath, sizeof(fullpath), "stimuli/%s", fname);
-
-  if (!SD.exists(fullpath)) {
+  // no folder path now — just use fname directly
+  if (!SD.exists(fname)) {
     Serial.print("Missing: ");
-    Serial.println(fullpath);
+    Serial.println(fname);
     return;
   }
 
   digitalWrite(TTL_PIN, HIGH);
-  playWav.play(fullpath);
-  delay(1); // let the library start
-  while (playWav.isPlaying()) {
-    delay(1);
-  }
+
+  // play the sound file
+  playSound(fname);      // or playWav.play(fname) if you use the Audio library
+  // delay(1);            // let the library start
+  // while (playWav.isPlaying()) {
+  //   delay(1);
+  // }
+
   digitalWrite(TTL_PIN, LOW);
 
   Serial.print("DONE ");
