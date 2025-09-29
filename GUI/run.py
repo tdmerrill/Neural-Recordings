@@ -39,6 +39,8 @@ Ui_MainWindow, QtBaseClass = uic.loadUiType(ui_path())
 # qtCreatorFile = resource_path("GUI/GUI.ui")
 # Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
+import signals
+import functions
 from signals import signals
 from functions import MyFunctions, ExperimentWorker
 
@@ -91,7 +93,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.TimeBetweenStimuliSpinBox.setValue(settings.get("TimeBetweenStimuliSpinBox", 10.0))
             self.JitterCheckbox.setChecked(settings.get("JitterCheckbox", True))
             self.JitterSpinBox.setValue(settings.get("JitterSpinBox", 2.0))
-            self.COMPortBox.setText(settings.get("COMPortBox", "COM4"))
+            self.COMPortBox.setText(settings.get("COMPort", "COM4"))
 
 
     def preset(self, p):
@@ -143,7 +145,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             print('closing serial connection...')
             self.fns.ser.close()
 
-            self.save_settings()
+        self.save_settings()
 
     def requested_stimuli(self):
         filename = self.LogFilenameLineEdit.text()
@@ -252,9 +254,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def settings_path(self):
         home = os.path.expanduser('~')
-        folder = os.path.join(home, 'Neural Recordings App')
-        os.makedirs(folder, exist_ok=True)
-        return os.path.join(folder, 'settings.json')
+        base_folder = os.path.join(home, 'Neural Recordings App', 'settings')
+        os.makedirs(base_folder, exist_ok=True)
+        return os.path.join(base_folder, 'settings.json')
 
     def save_settings(self):
         settings = {

@@ -136,8 +136,15 @@ class ExperimentWorker(QObject):
         self.finished.emit()
 
     def write_to_csv(self, stimulus, delay_post):
-        fp = os.path.join(os.getcwd(), "Log Files", self.filename)
-        os.makedirs(os.path.dirname(fp), exist_ok=True)
+        # Base folder same as settings
+        home = os.path.expanduser('~')
+        base_folder = os.path.join(home, 'Neural Recordings App', 'logs')
+        os.makedirs(base_folder, exist_ok=True)
+
+        # Log file path
+        fp = os.path.join(base_folder, self.filename)
+
+        # Check if file exists and create header if empty
         file_exists = os.path.isfile(fp)
 
         with open(fp, 'a', newline='') as logfile:
