@@ -106,16 +106,32 @@ class ExperimentWorker(QObject):
             self.write_block.emit(f'{str(i+1)}/{self.num_repetitions}')
             sounds = self.ExpStimList[:]
             random.shuffle(sounds)
+
             for sound in sounds:
                 if self._stop:
                     break
+
+                # ---- PLay Sound ----
                 self.write_sound.emit(sound)
+                signals.write_to_output_window.emit(f'Playing sound {sound}, then waiting {wait_time:.2f} seconds.')
+
                 wait_time = (self.time_between_stim +
                              random.uniform(-self.jitter_time, self.jitter_time)
                              if self.jitter_bool else self.time_between_stim)
+
                 self.ser.write(f'PLAY {sound}\n'.encode('utf-8'))
+
+                # -- Wait for arduino to respond that song is finished playing --
+                done_received = False
+                while not done_received and not self._stop:
+                    line = self.ser.readline().decode(errors='ignore').strip()
+                    if line == f'DONE {sound}':
+                        done_received = True
+
+                # -- write output to csv file --
                 self.write_to_csv(sound, wait_time)
-                signals.write_to_output_window.emit(f'Playing sound {sound}, then waiting {wait_time:.2f} seconds.')
+
+                # -- sleep between sounds --
                 time.sleep(wait_time)
         self.finished.emit()
 
