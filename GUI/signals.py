@@ -7,7 +7,7 @@ class GlobalSignals(QObject):
     end = pyqtSignal()
     get_selected_stimuli = pyqtSignal(list, int, float, bool, float)
     request_selected_stimuli = pyqtSignal()
-    send_predicted_time = (float)
+    send_predicted_time = pyqtSignal(float)
     write_block = pyqtSignal(str)
     write_sound = pyqtSignal(str)
 

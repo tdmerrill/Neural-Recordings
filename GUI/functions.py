@@ -113,11 +113,11 @@ class ExperimentWorker(QObject):
 
                 # ---- PLay Sound ----
                 self.write_sound.emit(sound)
-                signals.write_to_output_window.emit(f'Playing sound {sound}, then waiting {wait_time:.2f} seconds.')
 
                 wait_time = (self.time_between_stim +
                              random.uniform(-self.jitter_time, self.jitter_time)
                              if self.jitter_bool else self.time_between_stim)
+                signals.write_to_output_window.emit(f'Playing sound {sound}, then waiting {wait_time:.2f} seconds.')
 
                 self.ser.write(f'PLAY {sound}\n'.encode('utf-8'))
 
@@ -134,6 +134,7 @@ class ExperimentWorker(QObject):
                 # -- sleep between sounds --
                 time.sleep(wait_time)
         self.finished.emit()
+        signals.finished.emit()
 
     def write_to_csv(self, stimulus, delay_post):
         # Base folder same as settings

@@ -149,11 +149,23 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def requested_stimuli(self):
         filename = self.LogFilenameLineEdit.text()
+
+        # Base folder same as settings
+        home = os.path.expanduser('~')
+        base_folder = os.path.join(home, 'Neural Recordings App', 'logs')
+        fp = os.path.join(base_folder, filename)
+
         if not filename:
             QMessageBox.warning(
                 self,  # parent widget (your main window)
                 "Missing filename",  # window title
                 "Please enter a filename first."  # message text
+            )
+        elif os.path.exists(fp):
+            QMessageBox.warning(
+                self,  # parent widget (your main window)
+                "Duplicate filename",  # window title
+                "This filename already exists. Please enter a new name."  # message text
             )
         else:
             selected = []
@@ -241,7 +253,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             )
             if reply == QMessageBox.Yes:
                 self.BeginExperimentButton.setEnabled(False)
-                self.ReadyExperimentButton.setEnabled(False)
                 self.StopExperimentButton.setEnabled(False)
 
                 self.PredictedTimeLabel.setText("Predicted Time:")
