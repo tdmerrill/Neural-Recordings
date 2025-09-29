@@ -5,7 +5,7 @@ import sys
 from PyQt5.QtWidgets import QApplication, QDialog, QSizeGrip, QListWidgetItem, QMessageBox
 from PyQt5 import QtCore, QtGui, uic, QtWidgets
 from PyQt5.QtCore import Qt, QObject, QThread, pyqtSignal
-import sys, traceback, time
+import sys, traceback, time, json
 
 def except_hook(exc_type, exc_value, exc_tb):
     tb_str = ''.join(traceback.format_exception(exc_type, exc_value, exc_tb))
@@ -78,6 +78,22 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.StopExperimentButton.setEnabled(False)
         self.PopulateSongListButton.setEnabled(False)
 
+        self.load_settings()
+
+    def load_settings(self):
+        path = self.settings_path()
+        if os.path.isfile(path):
+            with open(path, "r") as f:
+                settings = json.load(f)
+
+            # restore values
+            self.NumRepSpinBox.setValue(settings.get("NumRepSpinBox", 10))
+            self.TimeBetweenStimuliSpinBox.setValue(settings.get("TimeBetweenStimuliSpinBox", 10.0))
+            self.JitterCheckbox.setChecked(settings.get("JitterCheckbox", True))
+            self.JitterSpinBox.setValue(settings.get("JitterSpinBox", 2.0))
+            self.COMPortBox.setText(settings.get("COMPortBox", "COM4"))
+
+
     def preset(self, p):
         bf_stim = ['BF_B_1800ir1.wav', 'BF_B_1800reg.wav']
         zf_stim = ['ZF_A_1200reg.wav', 'ZF_A_1800reg.wav', 'ZF_A_1200ir1.wav', 'ZF_A_1800ir1.wav']
@@ -126,6 +142,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if self.fns.ser is not None:
             print('closing serial connection...')
             self.fns.ser.close()
+
+            self.save_settings()
 
     def requested_stimuli(self):
         filename = self.LogFilenameLineEdit.text()
@@ -231,6 +249,24 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.OutputWindow.append("Resetting GUI...")
                 time.sleep(1.5)
                 self.OutputWindow.clear()
+
+    def settings_path(self):
+        home = os.path.expanduser('~')
+        folder = os.path.join(home, 'Neural Recordings App')
+        os.makedirs(folder, exist_ok=True)
+        return os.path.join(folder, 'settings.json')
+
+    def save_settings(self):
+        settings = {
+            "NumRepSpinBox": self.NumRepSpinBox.value(),
+            "TimeBetweenStimuliSpinBox": self.TimeBetweenStimuliSpinBox.value(),
+            "JitterCheckbox": self.JitterCheckbox.isChecked(),
+            "JitterSpinBox": self.JitterSpinBox.value(),
+            "COMPort": self.COMPortBox.text()
+        }
+
+        with open(self.settings_path(), "w") as f:
+            json.dump(settings, f, indent=2)
 
 if __name__ == '__main__':
     try:

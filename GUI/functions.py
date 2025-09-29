@@ -147,3 +147,5 @@ class ExperimentWorker(QObject):
                 writer.writerow(["Stimulus", "Delay Post"])
 
             writer.writerow([stimulus, delay_post])
+
+
