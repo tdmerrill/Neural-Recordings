@@ -1,14 +1,12 @@
 import os
 import sys
-print(f'current working directory: {os.getcwd()}')
+#print(f'current working directory: {os.getcwd()}')
 
-
-from PyQt5.QtWidgets import QApplication, QDialog, QSizeGrip, QListWidgetItem
+from PyQt5.QtWidgets import QApplication, QDialog, QSizeGrip, QListWidgetItem, QMessageBox
 from PyQt5 import QtCore, QtGui, uic, QtWidgets
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QObject, QThread, pyqtSignal
+import sys, traceback, time
 
-
-import sys, traceback
 def except_hook(exc_type, exc_value, exc_tb):
     tb_str = ''.join(traceback.format_exception(exc_type, exc_value, exc_tb))
     print(tb_str)  # still print to console
@@ -42,7 +40,7 @@ Ui_MainWindow, QtBaseClass = uic.loadUiType(ui_path())
 # Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
 from signals import signals
-from functions import MyFunctions
+from functions import MyFunctions, ExperimentWorker
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):
@@ -57,25 +55,39 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.TeensyConnectButton.clicked.connect(self.fns.connectTeensy)
         self.PopulateSongListButton.clicked.connect(self.fns.populateSongList)
         self.ReadyExperimentButton.clicked.connect(self.fns.readyExperiment)
-        self.BeginExperimentButton.clicked.connect(self.fns.beginExperiment)
+        self.BeginExperimentButton.clicked.connect(self.start_experiment)
+        self.StopExperimentButton.clicked.connect(self.stop_experiment)
 
         # ===== SIGNALS =====
         signals.teensy_connected_event.connect(self.teensy_connected)
         signals.populate_list_event.connect(self.populate_list)
         signals.end.connect(self.stop_runtime)
         signals.request_selected_stimuli.connect(self.requested_stimuli)
+        signals.write_block.connect(self.write_block)
+        signals.write_sound.connect(self.write_sound)
+        signals.write_to_output_window.connect(self.write_to_output_window)
+        signals.finished.connect(self.finished_experiment)
 
         # ===== DEFAULT CONDITION =====
         self.BeginExperimentButton.setEnabled(False)
         self.TeensyStatusLabel.setText("Status: Disconnected")
         self.ReadyExperimentButton.setEnabled(False)
+        self.StopExperimentButton.setEnabled(False)
 
+    def write_to_output_window(self, text):
+        self.OutputWindow.append(text)
+
+    def write_block(self,x):
+        self.RoundLabel.setText(f'Round: {str(x)}')
+
+    def write_sound(self,x):
+        self.CurrentStimulusLabel.setText(f'Current Stimulus: {str(x)}')
 
     def teensy_connected(self):
         self.TeensyStatusLabel.setText("Status: Connected")
 
     def populate_list(self, list):
-        #self.SelectedStimuliList.addItems(list)
+        self.SelectedStimuliList.clear()
 
         for i in list:
             item = QListWidgetItem(i)
@@ -90,25 +102,87 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.fns.ser.close()
 
     def requested_stimuli(self):
-        selected = []
-        for i in range(self.SelectedStimuliList.count()):
-            item = self.SelectedStimuliList.item(i)
-            if item.checkState() == Qt.Checked:
-                selected.append(item.text())
+        filename = self.LogFilenameLineEdit.text()
+        if not filename:
+            QMessageBox.warning(
+                self,  # parent widget (your main window)
+                "Missing filename",  # window title
+                "Please enter a filename first."  # message text
+            )
+        else:
+            selected = []
+            for i in range(self.SelectedStimuliList.count()):
+                item = self.SelectedStimuliList.item(i)
+                if item.checkState() == Qt.Checked:
+                    selected.append(item.text())
 
-        # ----- also get the settings -----
-        num_repetitions = self.NumRepSpinBox.value()
-        time_between_stim = self.TimeBetweenStimuliSpinBox.value()
-        jitter_bool = self.JitterCheckbox.isChecked()
-        jitter_time = self.JitterSpinBox.value()
+            # ----- also get the settings -----
+            num_repetitions = self.NumRepSpinBox.value()
+            time_between_stim = self.TimeBetweenStimuliSpinBox.value()
+            jitter_bool = self.JitterCheckbox.isChecked()
+            jitter_time = self.JitterSpinBox.value()
 
-        predicted_time = float((2.0 + time_between_stim) * len(selected) * num_repetitions)
-        mins, secs = divmod(predicted_time, 60)
-        hours, mins = divmod(mins, 60)
-        self.PredictedTimeLabel.setText(f'Predicted Time: {int(hours)}:{int(mins):02d}:{int(secs):02d}')
-        signals.get_selected_stimuli.emit(selected, num_repetitions, time_between_stim, jitter_bool, jitter_time)
+            predicted_time = float((2.0 + time_between_stim) * len(selected) * num_repetitions)
+            mins, secs = divmod(predicted_time, 60)
+            hours, mins = divmod(mins, 60)
+            self.PredictedTimeLabel.setText(f'Predicted Time: {int(hours)}:{int(mins):02d}:{int(secs):02d}')
+            signals.get_selected_stimuli.emit(selected, num_repetitions, time_between_stim, jitter_bool, jitter_time)
 
-        self.BeginExperimentButton.setEnabled(True)
+            self.BeginExperimentButton.setEnabled(True)
+
+    def start_experiment(self):
+        # create worker
+        self.worker = ExperimentWorker(
+            self.fns.ExpStimList,
+            self.fns.num_repetitions,
+            self.fns.time_between_stim,
+            self.fns.jitter_bool,
+            self.fns.jitter_time,
+            self.fns.ser,
+            self.LogFilenameLineEdit.text()
+        )
+        self.thread = QThread()
+        self.worker.moveToThread(self.thread)
+
+        # connect signals
+        self.worker.write_block.connect(self.write_block)
+        self.worker.write_sound.connect(self.write_sound)
+        self.worker.finished.connect(self.thread.quit)
+        self.worker.finished.connect(self.worker.deleteLater)
+        self.thread.finished.connect(self.thread.deleteLater)
+
+        self.thread.started.connect(self.worker.run)
+        self.thread.start()
+
+        self.StopExperimentButton.setEnabled(True)
+        self.start_time = time.time()
+
+
+    def stop_experiment(self):
+        if hasattr(self, 'worker'):
+            reply = QMessageBox.question(
+                self,  # parent window
+                "Confirm Stop",  # window title
+                "Are you sure you want to stop the experiment?",  # message text
+                QMessageBox.Yes | QMessageBox.No,  # buttons
+                QMessageBox.No  # default
+            )
+            if reply == QMessageBox.Yes:
+                self.worker.stop()
+
+                elapsed = time.time() - self.start_time  # seconds as float
+                total_seconds = int(elapsed)  # drop fractions
+                hours, remainder = divmod(total_seconds, 3600)
+                minutes, seconds = divmod(remainder, 60)
+                self.OutputWindow.append(f"Experiment Interrupted by User after {hours:02d}:{minutes:02d}:{seconds:02d}")
+
+
+    def finished_experiment(self):
+        elapsed = time.time() - self.start_time  # seconds as float
+        total_seconds = int(elapsed)  # drop fractions
+        hours, remainder = divmod(total_seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        self.OutputWindow.append(f"Experiment Finished after {hours:02d}:{minutes:02d}:{seconds:02d}")
 
 if __name__ == '__main__':
     try:
