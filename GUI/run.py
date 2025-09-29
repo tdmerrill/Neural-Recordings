@@ -52,11 +52,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.fns = MyFunctions()
 
         # ===== CONNECTIONS =====
-        self.TeensyConnectButton.clicked.connect(self.fns.connectTeensy)
+        self.TeensyConnectButton.clicked.connect(lambda: self.fns.connectTeensy(self.COMPortBox.text()))
         self.PopulateSongListButton.clicked.connect(self.fns.populateSongList)
         self.ReadyExperimentButton.clicked.connect(self.fns.readyExperiment)
         self.BeginExperimentButton.clicked.connect(self.start_experiment)
         self.StopExperimentButton.clicked.connect(self.stop_experiment)
+        self.BFPresetButton.clicked.connect(lambda: self.preset("Bengalese Finch"))
+        self.ZFPresetButton.clicked.connect(lambda: self.preset("Zebra Finch"))
+        self.ResetGUIButton.clicked.connect(self.reset)
 
         # ===== SIGNALS =====
         signals.teensy_connected_event.connect(self.teensy_connected)
@@ -73,6 +76,28 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.TeensyStatusLabel.setText("Status: Disconnected")
         self.ReadyExperimentButton.setEnabled(False)
         self.StopExperimentButton.setEnabled(False)
+        self.PopulateSongListButton.setEnabled(False)
+
+    def preset(self, p):
+        bf_stim = ['BF_B_1800ir1.wav', 'BF_B_1800reg.wav']
+        zf_stim = ['ZF_A_1200reg.wav', 'ZF_A_1800reg.wav', 'ZF_A_1200ir1.wav', 'ZF_A_1800ir1.wav']
+        if p == "Bengalese Finch":
+            for i in range(self.SelectedStimuliList.count()):
+                item = self.SelectedStimuliList.item(i)
+                text = item.text()  # the item's text
+                if text in bf_stim:
+                    item.setCheckState(Qt.Checked)
+                else:
+                    item.setCheckState(Qt.Unchecked)
+        elif p == "Zebra Finch":
+            for i in range(self.SelectedStimuliList.count()):
+                item = self.SelectedStimuliList.item(i)
+                text = item.text()  # the item's text
+                if text in zf_stim:
+                    item.setCheckState(Qt.Checked)
+                else:
+                    item.setCheckState(Qt.Unchecked)
+
 
     def write_to_output_window(self, text):
         self.OutputWindow.append(text)
@@ -85,6 +110,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def teensy_connected(self):
         self.TeensyStatusLabel.setText("Status: Connected")
+        self.PopulateSongListButton.setEnabled(True)
 
     def populate_list(self, list):
         self.SelectedStimuliList.clear()
@@ -183,6 +209,28 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         hours, remainder = divmod(total_seconds, 3600)
         minutes, seconds = divmod(remainder, 60)
         self.OutputWindow.append(f"Experiment Finished after {hours:02d}:{minutes:02d}:{seconds:02d}")
+
+    def reset(self):
+        if hasattr(self, 'worker'):
+            reply = QMessageBox.question(
+                self,  # parent window
+                "Confirm Reset",  # window title
+                "Are you sure you want to reset the GUI?",  # message text
+                QMessageBox.Yes | QMessageBox.No,  # buttons
+                QMessageBox.No  # default
+            )
+            if reply == QMessageBox.Yes:
+                self.BeginExperimentButton.setEnabled(False)
+                self.ReadyExperimentButton.setEnabled(False)
+                self.StopExperimentButton.setEnabled(False)
+
+                self.PredictedTimeLabel.setText("Predicted Time:")
+                self.RoundLabel.setText("Round:")
+                self.CurrentStimulusLabel.setText("Current Stimulus:")
+
+                self.OutputWindow.append("Resetting GUI...")
+                time.sleep(1.5)
+                self.OutputWindow.clear()
 
 if __name__ == '__main__':
     try:

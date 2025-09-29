@@ -10,8 +10,8 @@ class MyFunctions:
         # ===== SIGNALS =====
         signals.get_selected_stimuli.connect(self.getExpStim)
 
-    def connectTeensy(self):
-        PORT = 'COM8'
+    def connectTeensy(self, PORT):
+        PORT = str(PORT)
         BAUD = 115200
 
         self.ser = serial.Serial(PORT, BAUD, timeout=1)
